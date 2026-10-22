@@ -1,0 +1,17 @@
+# Nexora DocVault Sync Server on Render (an online server). Render's own disk is wiped at each deploy, so the sealed
+# copy goes to a Postgres: Render's, or Supabase / Neon (DATABASE_URL). Both values are typed in Render, never here.
+services:
+  - type: web
+    name: nexora-docvault-sync
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: node server.mjs
+    healthCheckPath: /v1/hello
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DV_SYNC_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        sync: false
