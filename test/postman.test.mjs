@@ -57,7 +57,7 @@ await ok('a new administrator\'s PC starts its company: an id and a short code t
   assert.match(r.data.code, /^[A-HJ-KM-NP-Z2-9]{4}-[A-HJ-KM-NP-Z2-9]{4}$/);
   codeA = r.data.code; companyA = r.data.companyId;
   assert.equal((await call(asha, 'POST', '/v2/company', keys(asha))).data.error, 'ALREADY_IN');
-  const rows = await db.query('SELECT * FROM pm_companies');
+  const rows = await db.query('SELECT * FROM dvpm_companies');
   assert.ok(!JSON.stringify(rows.rows).includes(codeA.replace('-', '')) && !JSON.stringify(rows.rows).includes(codeA), 'the server keeps only the code\'s hash');
 });
 await ok('a second company (Bose) on the same server', async () => {
@@ -106,7 +106,7 @@ await ok('the administrator\'s PC comes: takes its letters, says it has them —
   assert.equal((await call(asha, 'GET', '/v2/mail')).data.items.length, 0);
   const s = (await call(sita, 'GET', '/v2/status')).data;
   assert.equal(s.adminOn, true); assert.equal(s.waiting.length, 0);
-  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM pm_mail')).rows[0].n), 0, 'nothing kept once delivered');
+  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM dvpm_mail')).rows[0].n), 0, 'nothing kept once delivered');
 });
 await ok('the administrator\'s PC writes to each device; each gets only its own', async () => {
   const r = await call(asha, 'POST', '/v2/mail', { items: [{ to: sita.id, kind: 'doc', ref: 'D1', sealed: sealed('for Sita') }, { to: ravi.id, kind: 'ring', sealed: sealed('Ravi ring') }, { to: priya.id, kind: 'doc', sealed: sealed('x') }] });
@@ -134,7 +134,7 @@ await ok('a file up from Ravi to the administrator\'s PC, on to Sita (not sent u
   assert.equal(P.sha256hex(Buffer.concat([(await call(sita, 'GET', '/v2/blobs/F1/0')).data, (await call(sita, 'GET', '/v2/blobs/F1/1')).data])), meta.sha);
   assert.equal((await call(sita, 'POST', '/v2/blobs/F1/ack')).data.gone, true);
   assert.deepEqual((await call(asha, 'POST', '/v2/blobs/have', { ids: ['F1'] })).data.have, []);
-  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM pm_blob_parts')).rows[0].n), 0);
+  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM dvpm_blob_parts')).rows[0].n), 0);
 });
 await ok('a company\'s room: letters past its limit are refused (the administrator\'s PC takes them when on)', async () => {
   const big = 'A'.repeat(2 * 1024 * 1024);
@@ -167,7 +167,7 @@ await ok('one user = one PC + one phone: Ravi\'s new phone replaces the old; a r
   assert.deepEqual(r.data.replaced, [ravi.id]);
   assert.equal((await call(ravi, 'GET', '/v2/me')).data.state, 'replaced');
   assert.equal((await call(ravi, 'GET', '/v2/mail')).data.error, 'NOT_APPROVED');
-  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM pm_mail WHERE to_dev = $1', [ravi.id])).rows[0].n), 0, 'its letters dropped');
+  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM dvpm_mail WHERE to_dev = $1', [ravi.id])).rows[0].n), 0, 'its letters dropped');
   await call(asha, 'POST', '/v2/devices/remove', { deviceId: sita.id });
   assert.equal((await call(sita, 'GET', '/v2/status')).data.error, 'NOT_APPROVED');
   assert.equal((await call(asha, 'POST', '/v2/devices/remove', { deviceId: asha.id })).data.error, 'ADMIN_PC');
@@ -178,7 +178,7 @@ await ok('letters nobody fetched for 90 days are dropped', async () => {
   clock += 91 * 24 * 3600 * 1000;
   const r = await handler.purge();
   assert.ok(r.mail >= 1);
-  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM pm_mail')).rows[0].n), 0);
+  assert.equal(Number((await db.query('SELECT count(*)::int AS n FROM dvpm_mail')).rows[0].n), 0);
 });
 await ok('five new companies a day from one address — the sixth waits', async () => {
   const codes = [];
