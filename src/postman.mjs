@@ -278,8 +278,9 @@ export function createPostman(o) {
     if (m === 'POST' && doneM && doneM[2] === 'forward') {
       const a = await admin(req, raw);
       const b = json(raw);
+      /* the hub may send on any file of its own company that is still here (one it was sent, or one it sent) */
       const meta = await store.blobMeta(a.company.id, doneM[1]);
-      if (!may(a, meta)) throw fail(404, 'NO_FILE', 'Not waiting here for this PC.');
+      if (!meta) throw fail(404, 'NO_FILE', 'Not here any more.');
       const devs = new Set((await store.listDevices(a.company.id)).filter((d) => d.state === 'approved').map((d) => d.id));
       const add = (Array.isArray(b.to) ? b.to : []).map(String).filter((t) => devs.has(t));
       await store.setRecips(a.company.id, doneM[1], Array.from(new Set(meta.recips.concat(add))));
