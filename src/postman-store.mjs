@@ -25,8 +25,9 @@ const SCHEMA = [
 ];
 
 /** db: { query(text, params) → rows, tx(fn(q)) } — pgmini's pool, or the tests' own */
-export function postmanStore(url, db) {
-  const pool = db || createClient(url, 3);
+/** lanes: how many connections (3; PGlite behind pglite-socket takes one at a time — the test postman asks for 1) */
+export function postmanStore(url, db, lanes) {
+  const pool = db || createClient(url, lanes || 3);
   const q = (t, p) => pool.query(t, p || []);
   const company = (r) => r ? Object.assign(JSON.parse(r.v), { id: r.id }) : null;
   const store = {
