@@ -10,7 +10,8 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "test": "node test/sync.test.mjs"
+    "test": "node test/sync.test.mjs && node test/postman.test.mjs",
+    "postman": "node postman-server.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.11",
