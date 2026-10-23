@@ -71,6 +71,7 @@ export function createPostman(o) {
   const store = o.store;
   const now = o.now || (() => Date.now());
   const MAX = o.companyMaxBytes || 500 * 1024 * 1024;
+  const ADMIN_ON = o.adminOnMs || 2 * 60 * 1000;      /* "on": the administrator's PC asked within this (the tests: seconds) */
   const seen = new Map();                  /* replays inside the window */
   const tries = new Map();                 /* by address: wrong codes, new companies */
 
@@ -96,7 +97,7 @@ export function createPostman(o) {
     seen.set(k, now());
     if (seen.size > 20000) for (const [kk, t] of seen) if (now() - t > P.WINDOW_MS) seen.delete(kk);
     /* when it was last here — kept at most every half minute (the administrator's PC's is what the others are told) */
-    if (dev && (!dev.seen || now() - dev.seen > 30000)) { dev.seen = now(); await store.putDevice(dev); }
+    if (dev && (!dev.seen || now() - dev.seen > Math.min(30000, ADMIN_ON / 4))) { dev.seen = now(); await store.putDevice(dev); }
     return dev;
   }
   async function approved(req, raw) {
@@ -248,7 +249,7 @@ export function createPostman(o) {
       const adm = await store.getDevice(a.company.adminDevice);
       const waiting = await store.waitingFor(a.company.id, 'admin');
       const names = new Map((await store.listDevices(a.company.id)).map((d) => [d.id, d.userName || d.label || '']));
-      return send(res, 200, { adminSeen: adm ? iso(adm.seen) : null, adminOn: !!(adm && adm.seen && now() - adm.seen < 2 * 60 * 1000),
+      return send(res, 200, { adminSeen: adm ? iso(adm.seen) : null, adminOn: !!(adm && adm.seen && now() - adm.seen < ADMIN_ON),
         waiting: waiting.map((w) => ({ ref: w.ref, kind: w.kind, from: names.get(w.from) || '', mine: w.from === a.dev.id, at: iso(w.at) })) });
     }
 
